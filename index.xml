@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>bytefly</title>
+    <link>http://bytefly.art/</link>
+    <description>Recent content on bytefly</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>en-us</language>
+    <lastBuildDate>Wed, 23 Nov 2016 20:35:48 +0800</lastBuildDate>
+    
+	<atom:link href="http://bytefly.art/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>About</title>
+      <link>http://bytefly.art/about/</link>
+      <pubDate>Wed, 23 Nov 2016 20:35:48 +0800</pubDate>
+      
+      <guid>http://bytefly.art/about/</guid>
+      <description> An ordinary it engineer, always on the way to explore technology </description>
+    </item>
+    
+  </channel>
+</rss>
