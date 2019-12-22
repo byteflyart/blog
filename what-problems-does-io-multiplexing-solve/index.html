@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+
+<!-- Head tag -->
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <!--Description-->
+    
+        <meta name="description" content="A quiet programmer&#39;s blog">
+    
+
+    <!--Author-->
+    
+        <meta name="author" content="Charles">
+    
+
+    <!-- Title -->
+    
+    <title>IO多路复用解决了哪些问题 | Bytefly</title>
+
+    <!-- Bootstrap Core CSS -->
+    <link href="//cdn.bootcss.com/bootstrap/3.3.6/css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- Custom CSS -->
+    
+<link rel="stylesheet" href="/css/style.css">
+
+
+    <!-- Custom Fonts -->
+    <link href="//cdn.bootcss.com/font-awesome/4.5.0/css/font-awesome.min.css" rel="stylesheet" type="text/css">
+    <link href='//fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,800italic,400,300,600,700,800' rel='stylesheet' type='text/css'>
+    <link href='//fonts.googleapis.com/css?family=Noto+Serif:300italic,400italic,600italic,700italic,800italic,400,300,600,700,800' rel='stylesheet' type='text/css'>
+
+    <!-- jQuery -->
+    <script src="//cdn.bootcss.com/jquery/2.2.1/jquery.min.js"></script>
+    <!-- Bootstrap -->
+    <script src="//cdn.bootcss.com/bootstrap/3.3.6/js/bootstrap.min.js"></script>
+
+    <!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
+    <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+    <!--[if lt IE 9]>
+    <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+    <script src="https://oss.maxcdn.com/libs/respond.js/1.4.2/respond.min.js"></script>
+    <![endif]-->
+<meta name="generator" content="Hexo 4.1.1"></head>
+
+<body>
+
+    <!-- Content -->
+    <section class="article-container">
+<!-- Back Home -->
+<a class="nav-back" href="/">
+    <i class="fa fa-home" style="font-size: xx-large;"></i>
+</a>
+
+<!-- Page Header -->
+<header class="intro-header">
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+                <div class="post-heading">
+                    <h1>IO多路复用解决了哪些问题</h1>
+                </div>
+            </div>
+        </div>
+    </div>
+</header>
+
+<!-- Post Content -->
+<article>
+    <div class="container">
+        <div class="row">
+            <!-- Post Main Content -->
+            <div class="post-content col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+                <p>IO多路复用很多人都了解，这里我就不再过多赘述，很多资料讲的也很明白，但是大多数讲的都是每种复用的原理和使用方法，具体到底解决了哪些问题都比较模糊，本篇博文就是讲讲他解决的问题  </p>
+<a id="more"></a>
+<h1 id="常见的IO模式"><a href="#常见的IO模式" class="headerlink" title="常见的IO模式"></a>常见的IO模式</h1><h2 id="阻塞IO"><a href="#阻塞IO" class="headerlink" title="阻塞IO"></a>阻塞IO</h2><p>这种模式最好理解，简答来讲是我们有一个请求过来，建立好连接，我的处理进程一直阻塞着，等待这个请求的数据过来，直到读取所有数据后  </p>
+<h2 id="非阻塞IO"><a href="#非阻塞IO" class="headerlink" title="非阻塞IO"></a>非阻塞IO</h2><p>一个请求过来后，建立好连接，我们的进程不再阻塞等待，而是接着执行下面的代码，我们定期去询问这个请求，直到读取了到数据  </p>
+<h2 id="IO多路复用"><a href="#IO多路复用" class="headerlink" title="IO多路复用"></a>IO多路复用</h2><p>其实理解一下IO多路复用也是非阻塞IO的一种，只不过，我们这里不光处理一个请求，还会处理其他请求，处理的请求可能上万，这里的复用就体现在这里，一个进程会处理不止一个请求，也就是说，我们这个进程被多个请求同时使用，这就是IO多路复用，比较出名IO多路复用是select、poll、epoll  </p>
+<h2 id="异步IO"><a href="#异步IO" class="headerlink" title="异步IO"></a>异步IO</h2><p>我们上面说的这些其实按照划分的话都是同步IO，注意这里的落脚点是IO，而不是处理方式，同步IO和异步IO的区别在于读取数据的时候，我们同步IO读取数据是在处理这些请求的进程内完成的，无论它是否阻塞，当我们从一个请求的文件描述符（fd）读取数据的时候，这个进程就是处理请求的进程，而异步IO在于我们想要读取数据，管理这些fd，可能当时数据还是没有准备完毕，当时当fd的数据准备完毕后，数据是自动的送达的，而不是主动去读的，这是最明显的区别，现在我们常用的异步IO处理技术有java中的aio包，linux中的aio系统调用等等，但是aio这种方式不符合人类的思维方式，在编写的时候还是有些挑战的，当然这篇文章aio不是重点  </p>
+<h1 id="IO多路复用-1"><a href="#IO多路复用-1" class="headerlink" title="IO多路复用"></a>IO多路复用</h1><p>linux上的IO多路复用就这三种，当然讲解三种多路复用的文章有很多，这里简单总结下  </p>
+<ul>
+<li>select:最悠久的复用方式，可以获得数据已经准备好的fd，但是内部实现是维护了一个fd的集合，每次查找都要轮训，效率会低，而且最大支持1024个fd（常量写死的，但是可以通过编译内核解决），还有就是每次查找我们的fd集合都得从用户空间拷贝到内核空间然后再从内核空间拷贝到用户空间，涉及到两次内存的拷贝，性能也会损耗  </li>
+<li>poll:和select类似，但是没有文件描述的数量的上限  </li>
+<li>epoll:也是可以获得已经数据准备好的fd，但是它不是采用轮训的方式，它无须遍历整个被侦听的描述符集，只要遍历那些被内核IO事件异步唤醒而加入Ready队列的描述符集合就行了,我们会把所有的fd注册给epoll生成的管理器，当然注册的时候还是需要指明注册是事件类型，当这种事件发生的时候我们内核会自动的把相应的fd放到一个队列里面，我们需要的时候只需要从这个队列里面取就行了，这种方式更加高效，毕竟一般活跃的fd是少数。还有就是我们使用mmap方式防止数据的两次拷贝（select是存在数据拷贝的），如果不清楚mmap参看mmap  </li>
+</ul>
+<h1 id="解决问题"><a href="#解决问题" class="headerlink" title="解决问题"></a>解决问题</h1><p>到这里一切可能都比较清晰了但是有的人还是存在一些疑问:<code>数据准备好、为什么使用IO多路复用、IO多路复用提高速度了吗?</code>    </p>
+<ul>
+<li><p>数据准备好：这个概念我们先明白什么数据准备好，对于服务端来说就是请求数据，如果一段时间内该连接和服务端有数据的交互我们就认为这个fd是处于活跃状态，反之不活跃，也就是说在实际的应用场景中并不是所有的fd都是把请求的数据送到服务端的，虽然建立了连接但是没有数据交换也是很有可能的，或者说数据已经交换完毕了。这个其实很好理解，一个tcp请求通过三次握手就和服务端建立连接了，但是这个时候真正的请求报文没有到达服务端，还没发送或者咱网路上传输再或者已经到达了服务器的网卡，还没有加载到内存中，这些都是经常发生的也就是说我们服务端的fd 集合中有很少的处于活跃状态的fd，如果使用select这种进行轮训就得不偿失了，轮训的fd大部分都是非活跃的  </p>
+</li>
+<li><p>为什么使用IO多路复用：上面我们说了很多IO模型，如果使用阻塞的显然这是效率最低的方式，我们每次只能处理一个请求，处理完成后就处理下一个，中间有其他请求过来只能等着，所以这种被淘汰，如果使用多进程或者说多线程的话也是可以同时处理多个请求的，比如apache就是这种处理方式，每次一个请求过来了就fork一个子进程处理，但是如果请求上万的话这样就需要一万个进程，且不说fork是耗费资源的，就是一万个进程内存也是会爆的，比如java开辟一个线程（比进程还轻量级）需要耗费1M资源，一万个就是10G，这还不算我们处理请求过程中耗费的资源，还有就死一万个进程或者说线程CPU不可能一万个核心，势必会频繁的切换进程或者线程，这样大量的cpu时间片都耗费在进程线程的调度上（切换上线文），这也是一种极大的消耗。剩下的异步IO我们说过思考起来难度比较高，不理于程序设计，所以目前来看IO多路复用是一种比较合适的方案  </p>
+</li>
+<li><p>IO多路复用提高速度了吗：其实严格来讲并没有，比如我们就一个fd，如果使用阻塞IO方式理论上是最快的，毕竟没有其他多余的逻辑，处理请求的过程是一样的，但是如果fd多起来，从另外一个方面考虑，显然是提高了速度，阻塞IO需要排队或者根本不能同时处理大量请求，多进程模式fork和调度都要耗费大量时间，所以比较起来还是IO多路复用比较快  </p>
+</li>
+</ul>
+<h1 id="小结"><a href="#小结" class="headerlink" title="小结"></a>小结</h1><ul>
+<li>IO多路复用是一种比较高效的IO模型</li>
+<li>大量fd其实并不处于活跃状态</li>
+<li>IO多路复用并没有直接提高速度但是大大提高了吞吐量</li>
+</ul>
+
+ 
+                <!-- Meta -->
+                <div class="post-meta">
+                    <hr>
+                    <br>
+                    <div class="post-tags">
+                        
+                    </div>
+                    <div class="post-date">
+                        2016 年 10 月 09 日
+                    </div>
+                </div>
+            </div>
+
+            <!-- Comments -->
+            <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+                <!-- Disqus Comments -->
+
+<div id="disqus_thread" class="comment"></div>
+<script type="text/javascript">
+  /* * * CONFIGURATION VARIABLES * * */
+  var disqus_shortname = 'noble4cc';
+
+  /* * * DON'T EDIT BELOW THIS LINE * * */
+  (function() {
+      var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+      dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+      (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+  })();
+</script>
+
+
+            </div>
+        </div>
+    </div>
+</article>
+</section>
+
+<!-- Image viewer-->
+
+    <!-- Custom picture view-->
+    <link href="/css/viewer.min.css" rel="stylesheet" />
+    <script
+      src="/js/viewer.min.js"
+      type="text/javascript"
+      charset="utf-8"
+    ></script>
+    
+    <script type="text/javascript">
+      // set image viewer
+      Viewer.setDefaults({
+        zoomRatio: [0.5],
+        navbar: false,
+        toolbar: false,
+        button: false,
+        title: [2, (image, imageData) => `${image.alt}`],
+        show: function() {
+          this.viewer.zoomTo(0.5);
+        }
+      });
+      var imageList = document.getElementsByTagName("img");
+      Array.prototype.forEach.call(imageList, element => {
+        var viewer = new Viewer(element);
+      });
+    </script>
+
+    
+    <!-- Scripts -->
+    <script type="text/javascript">
+    console.log("© zchen9 🙋 2015-" + new Date().getFullYear());
+</script>
+  
+    <!-- Google Analytics -->
+    
+
+    <!-- Service Worker -->
+    <!-- if using service worker -->
+
+    
+</body>
+
+</html>

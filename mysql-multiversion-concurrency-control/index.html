@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+
+<!-- Head tag -->
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <!--Description-->
+    
+        <meta name="description" content="A quiet programmer&#39;s blog">
+    
+
+    <!--Author-->
+    
+        <meta name="author" content="Charles">
+    
+
+    <!-- Title -->
+    
+    <title>Mysql多版本并发控制 | Bytefly</title>
+
+    <!-- Bootstrap Core CSS -->
+    <link href="//cdn.bootcss.com/bootstrap/3.3.6/css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- Custom CSS -->
+    
+<link rel="stylesheet" href="/css/style.css">
+
+
+    <!-- Custom Fonts -->
+    <link href="//cdn.bootcss.com/font-awesome/4.5.0/css/font-awesome.min.css" rel="stylesheet" type="text/css">
+    <link href='//fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,800italic,400,300,600,700,800' rel='stylesheet' type='text/css'>
+    <link href='//fonts.googleapis.com/css?family=Noto+Serif:300italic,400italic,600italic,700italic,800italic,400,300,600,700,800' rel='stylesheet' type='text/css'>
+
+    <!-- jQuery -->
+    <script src="//cdn.bootcss.com/jquery/2.2.1/jquery.min.js"></script>
+    <!-- Bootstrap -->
+    <script src="//cdn.bootcss.com/bootstrap/3.3.6/js/bootstrap.min.js"></script>
+
+    <!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
+    <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+    <!--[if lt IE 9]>
+    <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+    <script src="https://oss.maxcdn.com/libs/respond.js/1.4.2/respond.min.js"></script>
+    <![endif]-->
+<meta name="generator" content="Hexo 4.1.1"></head>
+
+<body>
+
+    <!-- Content -->
+    <section class="article-container">
+<!-- Back Home -->
+<a class="nav-back" href="/">
+    <i class="fa fa-home" style="font-size: xx-large;"></i>
+</a>
+
+<!-- Page Header -->
+<header class="intro-header">
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+                <div class="post-heading">
+                    <h1>Mysql多版本并发控制</h1>
+                </div>
+            </div>
+        </div>
+    </div>
+</header>
+
+<!-- Post Content -->
+<article>
+    <div class="container">
+        <div class="row">
+            <!-- Post Main Content -->
+            <div class="post-content col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+                <p>数据库有四种隔离级别，其中mysql是的隔离级别是默认的可重复读，其他数据库默认的都是读已提交，本篇博文就讲下这些隔离级别是怎样实现的。</p>
+<a id="more"></a>
+<h1 id="可重复和读已提交"><a href="#可重复和读已提交" class="headerlink" title="可重复和读已提交"></a>可重复和读已提交</h1><p>所谓的可重复读指的是，事务第一次读取数据读的到数据是dataA，当另外的事务提交后，对数据集合dataA中的数据做了修改后，该事务再次读取同样的数据，读到的还是数据dataA，这就叫做可重复读。说通俗点就是在一个事务的生命周期中每次读到的数据都是一样的，除非是自己修改的数据  </p>
+<p>读已提交和可重复读区别是事务内能读到其他已提交事务的对数据的修改，没有提交的事务的修改是读不到的  </p>
+<h1 id="事务版本号"><a href="#事务版本号" class="headerlink" title="事务版本号"></a>事务版本号</h1><p>每次开启一个事务，我们会为这个事务赋予一个版本号或者说时间戳，其实就是一个整形数字，每开启一个事务就递增加1<br>数据库中每行数据都有三个隐藏字段，</p>
+<ul>
+<li>DB_TRX_ID: 改行数据被新增或者更新时所在事务的事务ID</li>
+<li>DB_ROLL_PTR:指向一个回滚的undo log</li>
+<li>DB_ROW_ID:的插入时自增的id<br>其中第一个比重要，我们在插入行的时候回把事务id写到该字段，当我们进行更新的时候，我们其实是先插入一行新的，改字段就是当前事务的id，当老的行数据不再被需要的时候（也就是说，读取老的行数据的事务已经全部提交的时候）老的行数据会被删除我们这行数据的DB_TRX_ID被更新成新事务的id</li>
+</ul>
+<h1 id="最大事务id"><a href="#最大事务id" class="headerlink" title="最大事务id"></a>最大事务id</h1><p>当开启一个事务的时候，mysql会自动记录一个截止到当前时刻为止产生的最大事务的id，我们这个事务所有的查询操作查到的数据的DB_TRX_ID值都不会超过我们所记录的当前事务的最大id，还有自己修改的数据，这样就保证了可重复读<br>如果我们把规则改成了每次查询都更新一次当前事务读到的最大事务id，这样每次查到的数据都是已经提交的事务的数据，这样就保证了读已提交</p>
+<h1 id="mvcc"><a href="#mvcc" class="headerlink" title="mvcc"></a>mvcc</h1><p>上面讲到的机制就是mvcc机制，也就是多版本并发控制<br>可是为什么要使用这种机制呢<br>我们平时使用数据库不可能每个时刻都有一个事务，很可能是多个事务在同时处理，这就产生了并发的问题，如果同时对某个资源都进行的了更新，那读到的数据可能每时每刻都在变化，第一读到的和第二次读到的数据很可能就不一样，我们一般处理这种问题怎么办，最常见的就是加锁，mysql的innodb是支持行锁的，我们一个事务拿到锁后，其他事务不能再更新该行，直到事务提交后释放了锁，其他事务才能进行操作，这样就解决了问题<br>但是加锁的效率太低了，其他拿不到锁的事务都得排队等待，也就是说事务本身就变成了串行执行的，这种方式类似于最高的事务隔离级别，串行化。如果既保证效率又能维护数据的准确性，mvcc就是这样一种处理方式，不用加锁就能保证数据的并发安全</p>
+<h1 id="当前读和快照读"><a href="#当前读和快照读" class="headerlink" title="当前读和快照读"></a>当前读和快照读</h1><p>mysql中有两种读取数据的方式，当前读可快照读，两种读的区别是，快照读就像就是读取的快照，就像可重复读一样，别的事务的修改不会读到，当前读就是读取最新的数据版本  </p>
+<p>我们普通的select都是快照读，所以有些并发情况下对数据的校验是存在问题的，使用当前读的话必须使用加锁（select … for update、select … in share model、update、delete、insert）  </p>
+<p>快照读的实现原理就是mvvc，如果是当前读的话使用的原理是加锁  </p>
+<h1 id="小结"><a href="#小结" class="headerlink" title="小结"></a>小结</h1><p>简单来说mysql 是使用这种方式来处理的实现并发控制的，这是一种比较平衡的方案，但是还是会存在幻读这种现象</p>
+<p>平时做并发校验的话必须使用当前读，这样读到的数据才是正确的</p>
+
+ 
+                <!-- Meta -->
+                <div class="post-meta">
+                    <hr>
+                    <br>
+                    <div class="post-tags">
+                        
+                    </div>
+                    <div class="post-date">
+                        2017 年 04 月 09 日
+                    </div>
+                </div>
+            </div>
+
+            <!-- Comments -->
+            <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+                <!-- Disqus Comments -->
+
+<div id="disqus_thread" class="comment"></div>
+<script type="text/javascript">
+  /* * * CONFIGURATION VARIABLES * * */
+  var disqus_shortname = 'noble4cc';
+
+  /* * * DON'T EDIT BELOW THIS LINE * * */
+  (function() {
+      var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+      dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+      (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+  })();
+</script>
+
+
+            </div>
+        </div>
+    </div>
+</article>
+</section>
+
+<!-- Image viewer-->
+
+    <!-- Custom picture view-->
+    <link href="/css/viewer.min.css" rel="stylesheet" />
+    <script
+      src="/js/viewer.min.js"
+      type="text/javascript"
+      charset="utf-8"
+    ></script>
+    
+    <script type="text/javascript">
+      // set image viewer
+      Viewer.setDefaults({
+        zoomRatio: [0.5],
+        navbar: false,
+        toolbar: false,
+        button: false,
+        title: [2, (image, imageData) => `${image.alt}`],
+        show: function() {
+          this.viewer.zoomTo(0.5);
+        }
+      });
+      var imageList = document.getElementsByTagName("img");
+      Array.prototype.forEach.call(imageList, element => {
+        var viewer = new Viewer(element);
+      });
+    </script>
+
+    
+    <!-- Scripts -->
+    <script type="text/javascript">
+    console.log("© zchen9 🙋 2015-" + new Date().getFullYear());
+</script>
+  
+    <!-- Google Analytics -->
+    
+
+    <!-- Service Worker -->
+    <!-- if using service worker -->
+
+    
+</body>
+
+</html>

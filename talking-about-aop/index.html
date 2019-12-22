@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+
+<!-- Head tag -->
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <!--Description-->
+    
+        <meta name="description" content="A quiet programmer&#39;s blog">
+    
+
+    <!--Author-->
+    
+        <meta name="author" content="Charles">
+    
+
+    <!-- Title -->
+    
+    <title>浅谈AOP | Bytefly</title>
+
+    <!-- Bootstrap Core CSS -->
+    <link href="//cdn.bootcss.com/bootstrap/3.3.6/css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- Custom CSS -->
+    
+<link rel="stylesheet" href="/css/style.css">
+
+
+    <!-- Custom Fonts -->
+    <link href="//cdn.bootcss.com/font-awesome/4.5.0/css/font-awesome.min.css" rel="stylesheet" type="text/css">
+    <link href='//fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,800italic,400,300,600,700,800' rel='stylesheet' type='text/css'>
+    <link href='//fonts.googleapis.com/css?family=Noto+Serif:300italic,400italic,600italic,700italic,800italic,400,300,600,700,800' rel='stylesheet' type='text/css'>
+
+    <!-- jQuery -->
+    <script src="//cdn.bootcss.com/jquery/2.2.1/jquery.min.js"></script>
+    <!-- Bootstrap -->
+    <script src="//cdn.bootcss.com/bootstrap/3.3.6/js/bootstrap.min.js"></script>
+
+    <!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
+    <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+    <!--[if lt IE 9]>
+    <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+    <script src="https://oss.maxcdn.com/libs/respond.js/1.4.2/respond.min.js"></script>
+    <![endif]-->
+<meta name="generator" content="Hexo 4.1.1"></head>
+
+<body>
+
+    <!-- Content -->
+    <section class="article-container">
+<!-- Back Home -->
+<a class="nav-back" href="/">
+    <i class="fa fa-home" style="font-size: xx-large;"></i>
+</a>
+
+<!-- Page Header -->
+<header class="intro-header">
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+                <div class="post-heading">
+                    <h1>浅谈AOP</h1>
+                </div>
+            </div>
+        </div>
+    </div>
+</header>
+
+<!-- Post Content -->
+<article>
+    <div class="container">
+        <div class="row">
+            <!-- Post Main Content -->
+            <div class="post-content col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+                <p>开发中OOP比较常用，是我们主流的编程方式，一项业务自向而下，顺着业务的流程不断往下编写，但是现在也经常使用另外一种编程方式AOP，面向切面编程，可能平时自己真的没有注意过，可是你可能不经意间就使用这种编程方式，本篇博文讲下AOP</p>
+<h1 id="AOP是什么"><a href="#AOP是什么" class="headerlink" title="AOP是什么"></a>AOP是什么</h1><p>AOP为Aspect Oriented Programming的缩写，从字面意思来说可能比较难理解，为什么正要面向切面呢，从下面一张示意图中我们可以看到，我们平时的业务为Moudle1、Moudle2、Moudle3，各个业务从流程上可以拆分出来，彼此之间可能有交集但是总体是上独立的，每个业务是自顶向下依次执行，但是我们为各个业务线在同样的时间点插入同样的功能，比如说日志收集、参数处理等，像一个平面一样直接插入到各个业务流程中去，所以得名面向切面编程，切面可以很多，但是一个平面上的操作是相同的，不同切面可以执行不同的操作，执行的时机也不一样</p>
+<p><img src="/image/eTsf1v1JiPvpGxuw.jpg" alt="image"></p>
+<h1 id="AOP有什么用呢"><a href="#AOP有什么用呢" class="headerlink" title="AOP有什么用呢"></a>AOP有什么用呢</h1><p>AOP的主要作用简单总结来说，<code>在不改变业务代码的同时，现有业务进行增强</code>。<br>拿一个商城类型的应用来说，一般有登录、注册、下单等操作，我们分别在这几个模块中实现我们的自己的业务逻辑，各个模块间其实是相对独立的。但是我们要在这些模块间添加相同的增强也就是业务逻辑的话，比如常见的请求日志和返回日志，有哪几种操作呢个？  </p>
+<ul>
+<li><p>最最直接的方式，在各个业务开始的时候写入请求日志，在业务结束的时候写入返回日志，这是最简单直接的，但是这样做对我们的业务代码是有侵入性的，每次必须手工编写，而且重复的代码太多了，随着业务的增长，新功能越来越多，这种方式肯定不是最优解  </p>
+</li>
+<li><p>使用aop的方式动态的注入我们的日志操作，这种方式显而易见，不需要改变我们的业务逻辑，而且只需要编写一次增强代码，针对所有的模块生效</p>
+</li>
+</ul>
+<p>显然我们平时用的最多的是AOP的形式，可能平时没有意识到，但是这种方式是很常见，几乎在所有的服务端开发中都会使用到，当然没意识到正在使用AOP也是由于AOP的形式是多种多样的 ，AOP是一种编程思想，并不是一种专门的框架或者说工具，格之格框架一般都有自己的实现  </p>
+<h1 id="Java中的AOP"><a href="#Java中的AOP" class="headerlink" title="Java中的AOP"></a>Java中的AOP</h1><p>在Java中肯定也有自己的AOP实现方式，Java其实在早在sun公司早期就已经提出了AOP的概念，AOP的发展壮大是离不开其他公司的不断创新支持的。Java中的AOP简单来说分为动态和静态。静态AOP指的就是AspectJ，动态的AOP实现方式有JDK代理和CGLib  </p>
+<h2 id="静态AOP"><a href="#静态AOP" class="headerlink" title="静态AOP"></a>静态AOP</h2><p>静态AOP简单来讲其实是在编译的时候把相关的增强代码直接的添加到我们的业务逻辑周围，是在编译的时候的就确定了的，最终的生成的字节码文件中其实是存在相应的增强代码的。这种方式有点类似于C++中的宏，在编译预处理的时候进行替换，当然本质上是不一样的，静态AOP使用的是Java中的AspectJ，AspectJ技术是需要引入其他jar包，该技术也是比较相对来说比较晦涩的，具体教程网络上有很多了这里就没必要在过多赘述了，下面是一部分示例代码  </p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//我们的一部分业务逻辑</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">XXService</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">doXX</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        System.out.println(<span class="string">"do xx"</span>);</span><br><span class="line">    &#125;</span><br><span class="line"> </span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">        XXService service = <span class="keyword">new</span> XXService ();</span><br><span class="line">        service.doXX();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>我们编写Aspect代码</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> aspect XXAspect &#123;</span><br><span class="line">    <span class="function"><span class="keyword">void</span> <span class="title">around</span><span class="params">()</span>:<span class="title">call</span><span class="params">(<span class="keyword">void</span> XXService.doXX()</span>)</span>&#123;</span><br><span class="line">        System.out.println(<span class="string">"before doXX"</span>);</span><br><span class="line">        proceed();</span><br><span class="line">        System.out.println(<span class="string">"after doXX"</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>我们最终生成的字节码文件其实不是由javac生成，而是由ajc编译器生成（类似于加强版本的java编译器）其中doXX()方法的上游和下游部分会插入before doXX和after doXX这两句，这两句也是在编译的时候就确定好了的aspect其实算是ajc 的关键字把，当然aspectJ的语法不仅仅这么简单，如果想专门学习还是要多找些资料比较好  </p>
+<p>相对来说AspectJ这种方式优点就是性能比较强大，毕竟在编译后就确定了，功能也强大，还是由于自身的AOP的原理是从编译阶段确立的，例如构造函数和也实现AOP。当然静态AOP不仅仅只有AspectJ这一种实现方案，但是AspectJ是是使用最广的</p>
+<h2 id="动态AOP"><a href="#动态AOP" class="headerlink" title="动态AOP"></a>动态AOP</h2><p>目前动态AOP常见有两种实现方案JDK动态代理和CGLib，这两种底层实现原理本质上是不一样的，但是本质上都是通过代理实现AOP，也就是说，我们的业务逻辑是A，我们通过某种方式将他包装成B，B中有A的业务逻辑部分，但是也有我们自己的增强，我们调用的A的时候其实执行的是B，执行B的时候就把我们要执行的增强一块执行了。</p>
+<ul>
+<li>JDK动态代理使用的是反射的方式，要求我们的业务类是提前实现了业务接口，然后我们定义一个代理类，实现也业务接口，将之前定义的业务类直接传递给代理类，当我们需要获得业务类的对象的时候其实是获得代理类的对象，由于实现了同样的接口，所以我们直接调用相应的业务方法就可以了，调用的代理类方法中间会执行我们的业务方法，因为里面包含业务类的对象，顺便执行我们的增强</li>
+<li>CGLib虽然也是在运行的时候执行AOP，但是不需要提前定义好业务接口，原理是在运行的时候通过继承业务类的方式重写父类的业务方法来实现AOP的，我们使用业务类其实是使用代理类也就是被重写业务方法的代理类的子类，这种方式不需要提前定义好接口，方式比较灵活</li>
+</ul>
+<h2 id="三种方式比较"><a href="#三种方式比较" class="headerlink" title="三种方式比较"></a>三种方式比较</h2><table>
+<thead>
+<tr>
+<th>框架</th>
+<th>代理机制</th>
+<th>作用时间范围</th>
+<th>作用原理</th>
+<th>优点</th>
+<th>缺点</th>
+<th>使用频率</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>AspectJ</td>
+<td>静态代理</td>
+<td>编译期</td>
+<td>编译期嵌入代码</td>
+<td>运行速度最快</td>
+<td>扩展性差, 无法在运行时创建新代理</td>
+<td>不常用</td>
+</tr>
+<tr>
+<td>JDK动态代理</td>
+<td>动态代理</td>
+<td>运行时</td>
+<td>被代理类加载进jvm之后, 根据声明的统一接口动态生成代理类, 同时将切面逻辑织入代理类, 也称为java的反射机制</td>
+<td>代理类生成速度快</td>
+<td>1.需要声明统一代理接口 , 扩展性相对CGLIB差2.相对于直接调用来说, 切面逻辑运行速度慢 3.使用大量反射如果不释放代理对象的引用, 会造成GC负荷大</td>
+<td>不常用</td>
+</tr>
+<tr>
+<td>CGLIB</td>
+<td>动态代理</td>
+<td>运行时</td>
+<td>通过字节码框架ASM动态生成子类, 重写父类方法, 同时嵌入切面逻辑</td>
+<td>1.切面逻辑运行速度快 2.被代理类无需实现统一接口 3.扩展性强</td>
+<td>1.代理类生成代价高 2.文档少, 难以深入学习 3.使用大量反射如果不释放代理对象的引用, 会造成GC负荷大</td>
+<td>常用</td>
+</tr>
+</tbody></table>
+<p>上面是我们在Java中用到的AOP技术，其实在我们平时在开发的过程中框架内多多少少会使用到上面三种技术或者部分技术，平时只需要多加留意就会发现。比如我们最最常用的Spring，SpringAOP使用的是动态AOP，兼容上面说的两种实现方式，具体用哪种可以用户自己选择，而且Spring本身用起来也相对方便，很多东西Spring框架自己就帮我们做了，Spring简单来说就是容器，里面存储着各种我们需要的类对象，当我们从容器中取出相应的对象，其实是被Spring包装过的代理对象，Spring会自动的根据我们的配置将容器中的对象进行包装成相应的代理对象</p>
+<p>当然具体了解Spring AOP本篇博文是不够的，还需要查阅相关的资料做进一步的学习</p>
+<h1 id="其他技术中的AOP"><a href="#其他技术中的AOP" class="headerlink" title="其他技术中的AOP"></a>其他技术中的AOP</h1><p>AOP其实是一种编程思想，是对OOP缺点的一种补充或者说改良，在其他技术栈中同样适用，只不过可能和Java中的实现方式不太一样。在PHP、Python或者Golang中都有用到了AOP。比如在其他语言或者框架中没听过AOP但是肯定都听说过洋葱模型<br><img src="/image/HJhTKh9ET2QFM7TT.png" alt="洋葱模型"><br>洋葱模型顾名思义就是像洋葱一样，一层层的包裹一个请求，最核心是我呢的业务逻辑，执行完业务逻辑后再按照进入洋葱的核心的顺序的逆序将洋葱进行过滤，最终将洋葱返回给客户端。其中各个洋葱表皮就是切面，经过洋葱表皮就是对我们的请求进行增强，最终到达业务逻辑。其中最常见的请求日志和返回日志的记录、权限的校验、签名的校验、返回数据的gzip压缩等等，都可以在洋葱表皮完成而不是在核心的中编写，其实我们的常见的各种服务端框架也是这样实现的，比如Python中的Flask，PHP中的Yii等，实现都是符合洋葱模型的，具体怎么实现的可以简单了解下，尤其是Flask核心代码只有一万多行，还是相当简洁的，当然Java中也是相当常用，Java的AOP实现可能更加复杂些，功能也更加强大</p>
+<h1 id="小结"><a href="#小结" class="headerlink" title="小结"></a>小结</h1><p>AOP是一把锋利的小刀，不像OOP那种瑞士军刀一样，无所不能，但是旺仔特定的领域使用起来还是相当锋利的，并且能让我们的代码更加的简洁高效。已经成为现代编程的主要方式之一，是对OOP缺点的补充和支持。在Java中使用特别普遍，几乎所有的服务端开发都会使用到。</p>
+<p>更加具体的实现方式可以查看以下资料</p>
+<ul>
+<li><a href="https://www.jianshu.com/p/5cfe2db57382" target="_blank" rel="noopener">Java中的AOP(原理)</a></li>
+<li><a href="https://www.cnblogs.com/Irving/p/9739889.html" target="_blank" rel="noopener">比较 Spring AOP 与 AspectJ</a></li>
+<li><a href="https://zhuanlan.zhihu.com/p/25522841" target="_blank" rel="noopener">关于 Spring AOP (AspectJ) 你该知晓的一切</a></li>
+</ul>
+
+ 
+                <!-- Meta -->
+                <div class="post-meta">
+                    <hr>
+                    <br>
+                    <div class="post-tags">
+                        
+                    </div>
+                    <div class="post-date">
+                        2017 年 08 月 22 日
+                    </div>
+                </div>
+            </div>
+
+            <!-- Comments -->
+            <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+                <!-- Disqus Comments -->
+
+<div id="disqus_thread" class="comment"></div>
+<script type="text/javascript">
+  /* * * CONFIGURATION VARIABLES * * */
+  var disqus_shortname = 'noble4cc';
+
+  /* * * DON'T EDIT BELOW THIS LINE * * */
+  (function() {
+      var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+      dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+      (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+  })();
+</script>
+
+
+            </div>
+        </div>
+    </div>
+</article>
+</section>
+
+<!-- Image viewer-->
+
+    <!-- Custom picture view-->
+    <link href="/css/viewer.min.css" rel="stylesheet" />
+    <script
+      src="/js/viewer.min.js"
+      type="text/javascript"
+      charset="utf-8"
+    ></script>
+    
+    <script type="text/javascript">
+      // set image viewer
+      Viewer.setDefaults({
+        zoomRatio: [0.5],
+        navbar: false,
+        toolbar: false,
+        button: false,
+        title: [2, (image, imageData) => `${image.alt}`],
+        show: function() {
+          this.viewer.zoomTo(0.5);
+        }
+      });
+      var imageList = document.getElementsByTagName("img");
+      Array.prototype.forEach.call(imageList, element => {
+        var viewer = new Viewer(element);
+      });
+    </script>
+
+    
+    <!-- Scripts -->
+    <script type="text/javascript">
+    console.log("© zchen9 🙋 2015-" + new Date().getFullYear());
+</script>
+  
+    <!-- Google Analytics -->
+    
+
+    <!-- Service Worker -->
+    <!-- if using service worker -->
+
+    
+</body>
+
+</html>
