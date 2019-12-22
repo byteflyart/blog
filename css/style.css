@@ -570,7 +570,6 @@ article .container .row img {
   margin: 30px auto;
   max-width: 55% !important;
   height: auto;
-  display: inline-block;
   box-shadow: 0 0 0 5px #fff, 0 0 15px 0 #4d4d4d;
 }
 @media only screen and (max-width: 768px) {
